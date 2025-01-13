@@ -25,7 +25,9 @@ struct Github_reminderApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+//            ContentView()
+//			ContributionGrid()
+			ContributionGridWithTable()
         }
         .modelContainer(sharedModelContainer)
     }
