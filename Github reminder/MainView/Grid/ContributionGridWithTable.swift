@@ -1,34 +1,38 @@
 //
-//  ContributionGrid_4.swift
+//  ContributionGridWithTable.swift
 //  Github reminder
 //
-//  Created by Maksim Ponomarev on 1/13/25.
+//  Created by Maksim Ponomarev on 1/14/25.
 //
 
 import SwiftUI
 
-//struct ContributionCell: Identifiable {
-//	let id = UUID()
-//	let date: Date
-//	var contributions: Int
-//	var completedContributions: Int = 0
-//}
-
-struct ContributionGridWithTable_4: View {
+struct ContributionGridWithTable: View {
 	@State private var cells: [[ContributionCell]]
 	@State private var selectedCell: ContributionCell?
 	@State private var showingPopup = false
 	@State private var popupPosition: CGPoint = .zero
 	
+	
+	func isToday(date: Date) -> Bool {
+		Calendar.current.isDateInToday(date)
+	}
+	
 	var futureContributions: [ContributionCell] {
 		let today = Date()
+		
 		return cells.flatMap { $0 }
-			.filter { $0.contributions > 0 && $0.date >= today }
+			.filter {
+				$0.contributions > 0 &&
+				(isToday(date: $0.date) || $0.date >= today)
+			}
 			.sorted { $0.date < $1.date }
 	}
 	
 	init() {
-		let calendar = Calendar.current
+		var calendar = Calendar.current
+		calendar.firstWeekday = 1  // 1 means Sunday is the first day
+		
 		var startComponents = DateComponents()
 		startComponents.year = 2025
 		startComponents.month = 1
@@ -42,12 +46,22 @@ struct ContributionGridWithTable_4: View {
 		let startDate = calendar.date(from: startComponents)!
 		let endDate = calendar.date(from: endComponents)!
 		
-		var allDates: [Date] = []
-		var date = startDate
+		// If start date isn't a Sunday, we need to go back to the previous Sunday
+		var currentDate = startDate
+		while calendar.component(.weekday, from: currentDate) != 1 {  // 1 is Sunday
+			currentDate = calendar.date(byAdding: .day, value: -1, to: currentDate)!
+		}
 		
-		while date <= endDate {
-			allDates.append(date)
-			date = calendar.date(byAdding: .day, value: 1, to: date)!
+		var allDates: [Date] = []
+		while currentDate <= endDate {
+			allDates.append(currentDate)
+			currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate)!
+		}
+		
+		// Add remaining days until Saturday if needed
+		while calendar.component(.weekday, from: currentDate) != 7 {  // 7 is Saturday
+			allDates.append(currentDate)
+			currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate)!
 		}
 		
 		let weeks = allDates.chunked(into: 7)
@@ -70,10 +84,14 @@ struct ContributionGridWithTable_4: View {
 				
 				// Grid
 				HStack(spacing: 2) {
-					VStack(alignment: .trailing, spacing: 2) {
+					VStack(alignment: .trailing, spacing: 1) {
+						Text("Sun").font(.caption2)
 						Text("Mon").font(.caption2)
+						Text("Tue").font(.caption2)
 						Text("Wed").font(.caption2)
+						Text("Thu").font(.caption2)
 						Text("Fri").font(.caption2)
+						Text("Sat").font(.caption2)
 					}
 					.foregroundColor(.gray)
 					.padding(.trailing, 4)
@@ -173,114 +191,6 @@ struct ContributionGridWithTable_4: View {
 	}
 }
 
-//struct MonthLabelsView: View {
-//	let cells: [[ContributionCell]]
-//	
-//	var body: some View {
-//		ScrollView(.horizontal, showsIndicators: false) {
-//			HStack(spacing: 2) {
-//				ForEach(monthLabels(), id: \.offset) { label in
-//					Text(label.text)
-//						.font(.caption2)
-//						.frame(width: CGFloat(label.width * 14), alignment: .leading)
-//				}
-//			}
-//			.padding(.vertical, 4)
-//		}
-//	}
-//	
-//	struct MonthLabel {
-//		let text: String
-//		let offset: Int
-//		let width: Int
-//	}
-//	
-//	func monthLabels() -> [MonthLabel] {
-//		let dateFormatter = DateFormatter()
-//		dateFormatter.dateFormat = "MMM"
-//		
-//		var labels: [MonthLabel] = []
-//		var currentMonth = ""
-//		var currentWidth = 0
-//		var offset = 0
-//		
-//		for column in cells {
-//			if let firstDate = column.first?.date {
-//				let month = dateFormatter.string(from: firstDate)
-//				if month != currentMonth {
-//					if !currentMonth.isEmpty {
-//						labels.append(MonthLabel(text: currentMonth, offset: offset - currentWidth, width: currentWidth))
-//					}
-//					currentMonth = month
-//					currentWidth = 1
-//				} else {
-//					currentWidth += 1
-//				}
-//			}
-//			offset += 1
-//		}
-//		
-//		// Add the last month
-//		if !currentMonth.isEmpty {
-//			labels.append(MonthLabel(text: currentMonth, offset: offset - currentWidth, width: currentWidth))
-//		}
-//		
-//		return labels
-//	}
-//}
-
-//struct ContributionTableCell: View {
-//	let cell: ContributionCell
-//	let onIncrementCompleted: () -> Void
-//	
-//	var isToday: Bool {
-//		Calendar.current.isDateInToday(cell.date)
-//	}
-//	
-//	var body: some View {
-//		VStack(alignment: .leading, spacing: 4) {
-//			HStack {
-//				VStack(alignment: .leading) {
-//					Text(cell.date.formatted(.dateTime.weekday(.wide)))
-//						.font(.subheadline)
-//					Text(cell.date.formatted(.dateTime.day().month(.wide).year()))
-//						.font(.caption)
-//						.foregroundColor(.secondary)
-//				}
-//				
-//				Spacer()
-//				
-//				Text("\(cell.contributions) contribution\(cell.contributions == 1 ? "" : "s")")
-//					.font(.subheadline)
-//					.foregroundColor(.green)
-//			}
-//			
-//			if isToday {
-//				HStack {
-//					Text("Completed: \(cell.completedContributions)/\(cell.contributions)")
-//						.font(.caption)
-//						.foregroundColor(.secondary)
-//					
-//					Spacer()
-//					
-//					if cell.completedContributions < cell.contributions {
-//						Button(action: onIncrementCompleted) {
-//							Image(systemName: "plus.circle.fill")
-//								.foregroundColor(.green)
-//						}
-//					}
-//				}
-//			}
-//		}
-//		.padding()
-//		.background(Color(.secondarySystemBackground))
-//	}
-//}
-
-// Existing CellView, ContributionPopup, and Array extension remain the same...
-
 #Preview {
-	ContributionGridWithTable_4()
-		.preferredColorScheme(.dark)
-		.padding()
+    ContributionGridWithTable()
 }

@@ -27,7 +27,8 @@ struct Github_reminderApp: App {
         WindowGroup {
 //            ContentView()
 //			ContributionGrid()
-			ContributionGridWithTable()
+//			ContributionGridWithTable()
+			MainView()
         }
         .modelContainer(sharedModelContainer)
     }
