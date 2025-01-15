@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Bucket
+   uuid = "0468B778-8E89-4784-A785-61A9CD6D1E87"
+   type = "1"
+   version = "2.0">
+   <Breakpoints>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "504A885C-CC7A-45BC-BD10-A18536CCE702"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Github reminder/MainView/Grid/ContributionGridWithTable.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "27"
+            endingLineNumber = "27"
+            landmarkName = "fetchGitHubContributions()"
+            landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "504A885C-CC7A-45BC-BD10-A18536CCE702 - 6d49de6995a690ab"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(3) suspend resume partial function for Github_reminder.ContributionGridWithTable.fetchGitHubContributions() async -&gt; ()"
+                  moduleName = "Github reminder.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/maxnxi/Documents/Programms/Projjects/Github/Github%20reminder/Github%20reminder/MainView/Grid/ContributionGridWithTable.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "27"
+                  endingLineNumber = "27">
+               </Location>
+               <Location
+                  uuid = "504A885C-CC7A-45BC-BD10-A18536CCE702 - acc54e81680b0f96"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "closure #1 (Swift.Array&lt;Github_reminder.ContributionCell&gt;) -&gt; Swift.Bool in Github_reminder.ContributionGridWithTable.fetchGitHubContributions() async -&gt; ()"
+                  moduleName = "Github reminder.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/maxnxi/Documents/Programms/Projjects/Github/Github%20reminder/Github%20reminder/MainView/Grid/ContributionGridWithTable.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "27"
+                  endingLineNumber = "27">
+               </Location>
+               <Location
+                  uuid = "504A885C-CC7A-45BC-BD10-A18536CCE702 - 91e8fb16c34f8584"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "closure #1 (Github_reminder.ContributionCell) -&gt; Swift.Bool in closure #1 (Swift.Array&lt;Github_reminder.ContributionCell&gt;) -&gt; Swift.Bool in Github_reminder.ContributionGridWithTable.fetchGitHubContributions() async -&gt; ()"
+                  moduleName = "Github reminder.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/maxnxi/Documents/Programms/Projjects/Github/Github%20reminder/Github%20reminder/MainView/Grid/ContributionGridWithTable.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "27"
+                  endingLineNumber = "27">
+               </Location>
+            </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+   </Breakpoints>
+</Bucket>

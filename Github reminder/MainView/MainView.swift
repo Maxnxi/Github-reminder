@@ -8,11 +8,21 @@
 import SwiftUI
 
 struct MainView: View {
-    var body: some View {
-		ContributionGridWithTable()
-    }
+	var body: some View {
+		TabView {
+			ContributionGridWithTable()
+				.tabItem {
+					Label("Desired", systemImage: "calendar")
+				}
+			
+			ProfileView()
+				.tabItem {
+					Label("Profile", systemImage: "person.circle")
+				}
+		}
+	}
 }
 
 #Preview {
-	ContributionGridWithTable()
+	MainView()
 }
