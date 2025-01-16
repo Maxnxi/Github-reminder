@@ -13,6 +13,26 @@ struct ContributionGridWithTable: View {
 	@State private var showingPopup = false
 	@State private var popupPosition: CGPoint = .zero
 	
+	@State private var todayContributions: Int = 0
+	
+	func fetchGitHubContributions() async {
+		do {
+			let service = GitHubContributionsService()
+			let contributions = try await service.fetchTodayContributions(
+				username: "Maxnxi", // "YOUR_GITHUB_USERNAME",
+				token: "YOUR_GITHUB_TOKEN"
+			)
+			debugPrint("Users today contributions: \(contributions)")
+			// Update the UI with the fetched contributions
+			if let idx = cells.firstIndex(where: { $0.contains(where: { Calendar.current.isDateInToday($0.date) }) }) {
+				if let cellIdx = cells[idx].firstIndex(where: { Calendar.current.isDateInToday($0.date) }) {
+					cells[idx][cellIdx].contributions = contributions
+				}
+			}
+		} catch {
+			print("Error fetching contributions:", error)
+		}
+	}
 	
 	func isToday(date: Date) -> Bool {
 		Calendar.current.isDateInToday(date)
@@ -166,6 +186,9 @@ struct ContributionGridWithTable: View {
 				}
 			}
 		)
+		.task {
+			await fetchGitHubContributions()
+		}
 	}
 	
 	func incrementCompletedContributions(for cell: ContributionCell) {
