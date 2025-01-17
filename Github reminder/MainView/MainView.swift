@@ -19,6 +19,11 @@ struct MainView: View {
 				.tabItem {
 					Label("Profile", systemImage: "person.circle")
 				}
+			
+			CommitView()
+				.tabItem {
+					Label("Commit", systemImage: "arrow.up.doc")
+				}
 		}
 	}
 }
