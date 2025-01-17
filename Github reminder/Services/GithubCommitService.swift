@@ -9,6 +9,7 @@ import Foundation
 
 class GitHubCommitService: ObservableObject {
 	private let baseURL = "https://api.github.com"
+	private let logger = DebugLogger.shared
 	
 	struct CommitError: LocalizedError {
 		let message: String
@@ -28,14 +29,15 @@ class GitHubCommitService: ObservableObject {
 		content: String,
 		commitMessage: String
 	) async throws {
-		print("Starting commit process...")
+		logger.log("Starting commit process...", type: .info)
 		
 		// First, get the reference to the main branch
 		guard let referenceURL = URL(string: "\(baseURL)/repos/\(username)/\(repository)/git/refs/heads/main") else {
+			logger.log("Invalid reference URL", type: .error)
 			throw CommitError(message: "Invalid reference URL")
 		}
 		
-		print("Fetching reference from: \(referenceURL.absoluteString)")
+		logger.log("Fetching reference from: \(referenceURL.absoluteString)", type: .debug)
 		
 		var request = URLRequest(url: referenceURL)
 		request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
@@ -44,33 +46,36 @@ class GitHubCommitService: ObservableObject {
 		let (refData, refResponse) = try await URLSession.shared.data(for: request)
 		
 		guard let httpResponse = refResponse as? HTTPURLResponse else {
+			logger.log("Invalid response type received", type: .error)
 			throw GitHubError.invalidResponse("Invalid response type")
 		}
 		
 		if httpResponse.statusCode != 200 {
 			let errorMessage = String(data: refData, encoding: .utf8) ?? "Unknown error"
+			logger.log("Reference request failed with status \(httpResponse.statusCode): \(errorMessage)", type: .error)
 			throw GitHubError.apiError(httpResponse.statusCode, errorMessage)
 		}
 		
-		print("Reference response: \(String(data: refData, encoding: .utf8) ?? "nil")")
+		logger.log("Reference response: \(String(data: refData, encoding: .utf8) ?? "nil")", type: .debug)
 		
 		// Decode reference response
 		let reference: Reference
 		do {
 			reference = try JSONDecoder().decode(Reference.self, from: refData)
 		} catch {
-			print("Reference decoding error: \(error)")
+			logger.log("Reference decoding error: \(error)", type: .error)
 			throw GitHubError.decodingError("Failed to decode reference: \(error.localizedDescription)")
 		}
 		
-		print("Successfully got reference SHA: \(reference.object.sha)")
+		logger.log("Successfully got reference SHA: \(reference.object.sha)", type: .info)
 		
 		// Get the current tree
 		guard let treeURL = URL(string: "\(baseURL)/repos/\(username)/\(repository)/git/trees/\(reference.object.sha)") else {
+			logger.log("Invalid tree URL", type: .error)
 			throw CommitError(message: "Invalid tree URL")
 		}
 		
-		print("Fetching tree from: \(treeURL.absoluteString)")
+		logger.log("Fetching tree from: \(treeURL.absoluteString)", type: .debug)
 		
 		request = URLRequest(url: treeURL)
 		request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
@@ -78,25 +83,27 @@ class GitHubCommitService: ObservableObject {
 		let (treeData, treeResponse) = try await URLSession.shared.data(for: request)
 		
 		guard let treeHttpResponse = treeResponse as? HTTPURLResponse else {
+			logger.log("Invalid tree response type", type: .error)
 			throw GitHubError.invalidResponse("Invalid tree response type")
 		}
 		
 		if treeHttpResponse.statusCode != 200 {
 			let errorMessage = String(data: treeData, encoding: .utf8) ?? "Unknown error"
+			logger.log("Tree request failed with status \(treeHttpResponse.statusCode): \(errorMessage)", type: .error)
 			throw GitHubError.apiError(treeHttpResponse.statusCode, errorMessage)
 		}
 		
-		print("Tree response: \(String(data: treeData, encoding: .utf8) ?? "nil")")
+		logger.log("Tree response: \(String(data: treeData, encoding: .utf8) ?? "nil")", type: .debug)
 		
 		let currentTree: Tree
 		do {
 			currentTree = try JSONDecoder().decode(Tree.self, from: treeData)
 		} catch {
-			print("Tree decoding error: \(error)")
+			logger.log("Tree decoding error: \(error)", type: .error)
 			throw GitHubError.decodingError("Failed to decode tree: \(error.localizedDescription)")
 		}
 		
-		print("Successfully got tree SHA: \(currentTree.sha)")
+		logger.log("Successfully got tree SHA: \(currentTree.sha)", type: .info)
 		
 		// Get current README content
 		let readmeContent = try await fetchReadmeContent(
@@ -105,7 +112,7 @@ class GitHubCommitService: ObservableObject {
 			token: token
 		)
 		
-		print("Current README content length: \(readmeContent.count)")
+		logger.log("Current README content length: \(readmeContent.count)", type: .debug)
 		
 		// Create new blob with updated content
 		let updatedContent = readmeContent + "\n" + content
@@ -116,7 +123,7 @@ class GitHubCommitService: ObservableObject {
 			token: token
 		)
 		
-		print("Created new blob with SHA: \(blob.sha)")
+		logger.log("Created new blob with SHA: \(blob.sha)", type: .info)
 		
 		// Create new tree
 		let newTree = try await createTree(
@@ -128,7 +135,7 @@ class GitHubCommitService: ObservableObject {
 			token: token
 		)
 		
-		print("Created new tree with SHA: \(newTree.sha)")
+		logger.log("Created new tree with SHA: \(newTree.sha)", type: .info)
 		
 		// Create new commit
 		let commit = try await createCommit(
@@ -140,7 +147,7 @@ class GitHubCommitService: ObservableObject {
 			token: token
 		)
 		
-		print("Created new commit with SHA: \(commit.sha)")
+		logger.log("Created new commit with SHA: \(commit.sha)", type: .info)
 		
 		// Update reference
 		try await updateReference(
@@ -150,7 +157,7 @@ class GitHubCommitService: ObservableObject {
 			token: token
 		)
 		
-		print("Successfully updated reference")
+		logger.log("Successfully updated reference", type: .info)
 	}
 	
 	private func fetchReadmeContent(
@@ -158,9 +165,10 @@ class GitHubCommitService: ObservableObject {
 		repository: String,
 		token: String
 	) async throws -> String {
-		print("Fetching README content...")
+		logger.log("Fetching README content...", type: .debug)
 		
 		guard let url = URL(string: "\(baseURL)/repos/\(username)/\(repository)/contents/README.md") else {
+			logger.log("Invalid README URL", type: .error)
 			throw CommitError(message: "Invalid README URL")
 		}
 		
@@ -171,29 +179,33 @@ class GitHubCommitService: ObservableObject {
 		let (data, response) = try await URLSession.shared.data(for: request)
 		
 		guard let httpResponse = response as? HTTPURLResponse else {
+			logger.log("Invalid README response type", type: .error)
 			throw GitHubError.invalidResponse("Invalid README response type")
 		}
 		
 		if httpResponse.statusCode != 200 {
 			let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
+			logger.log("README request failed with status \(httpResponse.statusCode): \(errorMessage)", type: .error)
 			throw GitHubError.apiError(httpResponse.statusCode, errorMessage)
 		}
 		
-		print("README response: \(String(data: data, encoding: .utf8) ?? "nil")")
+		logger.log("README response: \(String(data: data, encoding: .utf8) ?? "nil")", type: .debug)
 		
 		let readme: ReadmeContent
 		do {
 			readme = try JSONDecoder().decode(ReadmeContent.self, from: data)
 		} catch {
-			print("README decoding error: \(error)")
+			logger.log("README decoding error: \(error)", type: .error)
 			throw GitHubError.decodingError("Failed to decode README: \(error.localizedDescription)")
 		}
 		
 		guard let decodedData = Data(base64Encoded: readme.content.replacingOccurrences(of: "\n", with: "")) else {
+			logger.log("Failed to decode README content from base64", type: .error)
 			throw CommitError(message: "Failed to decode README content from base64")
 		}
 		
 		guard let content = String(data: decodedData, encoding: .utf8) else {
+			logger.log("Failed to decode README content to string", type: .error)
 			throw CommitError(message: "Failed to decode README content to string")
 		}
 		
@@ -206,9 +218,10 @@ class GitHubCommitService: ObservableObject {
 		content: String,
 		token: String
 	) async throws -> Blob {
-		print("Creating blob...")
+		logger.log("Creating blob...", type: .debug)
 		
 		guard let url = URL(string: "\(baseURL)/repos/\(username)/\(repository)/git/blobs") else {
+			logger.log("Invalid blob URL", type: .error)
 			throw CommitError(message: "Invalid blob URL")
 		}
 		
@@ -223,20 +236,22 @@ class GitHubCommitService: ObservableObject {
 		let (data, response) = try await URLSession.shared.data(for: request)
 		
 		guard let httpResponse = response as? HTTPURLResponse else {
+			logger.log("Invalid blob response type", type: .error)
 			throw GitHubError.invalidResponse("Invalid blob response type")
 		}
 		
 		if httpResponse.statusCode != 201 {
 			let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
+			logger.log("Blob creation failed with status \(httpResponse.statusCode): \(errorMessage)", type: .error)
 			throw GitHubError.apiError(httpResponse.statusCode, errorMessage)
 		}
 		
-		print("Blob response: \(String(data: data, encoding: .utf8) ?? "nil")")
+		logger.log("Blob response: \(String(data: data, encoding: .utf8) ?? "nil")", type: .debug)
 		
 		do {
 			return try JSONDecoder().decode(Blob.self, from: data)
 		} catch {
-			print("Blob decoding error: \(error)")
+			logger.log("Blob decoding error: \(error)", type: .error)
 			throw GitHubError.decodingError("Failed to decode blob: \(error.localizedDescription)")
 		}
 	}
@@ -249,9 +264,10 @@ class GitHubCommitService: ObservableObject {
 		blobSha: String,
 		token: String
 	) async throws -> Tree {
-		print("Creating tree...")
+		logger.log("Creating tree...", type: .debug)
 		
 		guard let url = URL(string: "\(baseURL)/repos/\(username)/\(repository)/git/trees") else {
+			logger.log("Invalid tree URL", type: .error)
 			throw CommitError(message: "Invalid tree URL")
 		}
 		
@@ -277,20 +293,22 @@ class GitHubCommitService: ObservableObject {
 		let (data, response) = try await URLSession.shared.data(for: request)
 		
 		guard let httpResponse = response as? HTTPURLResponse else {
+			logger.log("Invalid create tree response type", type: .error)
 			throw GitHubError.invalidResponse("Invalid create tree response type")
 		}
 		
 		if httpResponse.statusCode != 201 {
 			let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
+			logger.log("Tree creation failed with status \(httpResponse.statusCode): \(errorMessage)", type: .error)
 			throw GitHubError.apiError(httpResponse.statusCode, errorMessage)
 		}
 		
-		print("Create tree response: \(String(data: data, encoding: .utf8) ?? "nil")")
+		logger.log("Create tree response: \(String(data: data, encoding: .utf8) ?? "nil")", type: .debug)
 		
 		do {
 			return try JSONDecoder().decode(Tree.self, from: data)
 		} catch {
-			print("Create tree decoding error: \(error)")
+			logger.log("Create tree decoding error: \(error)", type: .error)
 			throw GitHubError.decodingError("Failed to decode created tree: \(error.localizedDescription)")
 		}
 	}
@@ -303,9 +321,10 @@ class GitHubCommitService: ObservableObject {
 		treeSha: String,
 		token: String
 	) async throws -> Commit {
-		print("Creating commit...")
+		logger.log("Creating commit...", type: .debug)
 		
 		guard let url = URL(string: "\(baseURL)/repos/\(username)/\(repository)/git/commits") else {
+			logger.log("Invalid commit URL", type: .error)
 			throw CommitError(message: "Invalid commit URL")
 		}
 		
@@ -320,26 +339,27 @@ class GitHubCommitService: ObservableObject {
 			"tree": treeSha
 		]
 		
-//		request.httpBody = try JSONEncoder().encode(commitRequest)
 		request.httpBody = try JSONSerialization.data(withJSONObject: commitRequest)
 		
 		let (data, response) = try await URLSession.shared.data(for: request)
 		
 		guard let httpResponse = response as? HTTPURLResponse else {
+			logger.log("Invalid create commit response type", type: .error)
 			throw GitHubError.invalidResponse("Invalid create commit response type")
 		}
 		
 		if httpResponse.statusCode != 201 {
 			let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
+			logger.log("Commit creation failed with status \(httpResponse.statusCode): \(errorMessage)", type: .error)
 			throw GitHubError.apiError(httpResponse.statusCode, errorMessage)
 		}
 		
-		print("Create commit response: \(String(data: data, encoding: .utf8) ?? "nil")")
+		logger.log("Create commit response: \(String(data: data, encoding: .utf8) ?? "nil")", type: .debug)
 		
 		do {
 			return try JSONDecoder().decode(Commit.self, from: data)
 		} catch {
-			print("Create commit decoding error: \(error)")
+			logger.log("Create commit decoding error: \(error)", type: .error)
 			throw GitHubError.decodingError("Failed to decode created commit: \(error.localizedDescription)")
 		}
 	}
@@ -350,9 +370,10 @@ class GitHubCommitService: ObservableObject {
 		commitSha: String,
 		token: String
 	) async throws {
-		print("Updating reference...")
+		logger.log("Updating reference...", type: .debug)
 		
 		guard let url = URL(string: "\(baseURL)/repos/\(username)/\(repository)/git/refs/heads/main") else {
+			logger.log("Invalid reference URL", type: .error)
 			throw CommitError(message: "Invalid reference URL")
 		}
 		
@@ -371,15 +392,18 @@ class GitHubCommitService: ObservableObject {
 		let (data, response) = try await URLSession.shared.data(for: request)
 		
 		guard let httpResponse = response as? HTTPURLResponse else {
+			logger.log("Invalid update reference response type", type: .error)
 			throw GitHubError.invalidResponse("Invalid update reference response type")
 		}
 		
 		if httpResponse.statusCode != 200 {
 			let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
+			logger.log("Reference update failed with status \(httpResponse.statusCode): \(errorMessage)", type: .error)
 			throw GitHubError.apiError(httpResponse.statusCode, errorMessage)
 		}
 		
-		print("Update reference response: \(String(data: data, encoding: .utf8) ?? "nil")")
+		logger.log("Update reference response: \(String(data: data, encoding: .utf8) ?? "nil")", type: .debug)
+		logger.log("Successfully completed the commit process! 🎉", type: .info)
 	}
 }
 
