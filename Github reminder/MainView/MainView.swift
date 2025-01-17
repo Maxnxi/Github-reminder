@@ -24,6 +24,11 @@ struct MainView: View {
 				.tabItem {
 					Label("Commit", systemImage: "arrow.up.doc")
 				}
+			
+			ConsoleView()
+				.tabItem {
+					Label("Console", systemImage: "console")
+				}
 		}
 	}
 }
