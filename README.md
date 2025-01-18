@@ -7,3 +7,4 @@ New info
 Update info 
 Check commit 
 The idea of app was based on history
+Check it
