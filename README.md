@@ -5,3 +5,5 @@ Check
 Check 2
 New info
 Update info 
+Check commit 
+The idea of app was based on history
