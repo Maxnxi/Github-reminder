@@ -10,3 +10,4 @@ The idea of app was based on history
 Check it
 Some Updates
 !
+Add update and check ChatGPT api
