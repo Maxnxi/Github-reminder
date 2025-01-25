@@ -12,3 +12,4 @@ Some Updates
 !
 Add update and check ChatGPT api
 GitHub reminder can be used individually 
+Check
