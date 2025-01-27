@@ -15,3 +15,4 @@ GitHub reminder can be used individually
 Update
 Add more info
 Add
+Add new class
